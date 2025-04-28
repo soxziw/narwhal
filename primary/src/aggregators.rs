@@ -4,6 +4,7 @@ use crate::messages::{Certificate, Header, Vote};
 use config::{Committee, Stake};
 use crypto::{PublicKey, Signature};
 use std::collections::HashSet;
+use log::debug;
 
 /// Aggregates votes for a particular header into a certificate.
 pub struct VotesAggregator {
@@ -35,6 +36,7 @@ impl VotesAggregator {
         self.votes.push((author, vote.signature));
         self.weight += committee.stake(&author);
         if self.weight >= committee.quorum_threshold() {
+            debug!("Quorum {:?}", self.votes);
             self.weight = 0; // Ensures quorum is only reached once.
             return Ok(Some(Certificate {
                 header: header.clone(),
