@@ -34,9 +34,11 @@ impl VotesAggregator {
 
         self.votes.push((author, vote.signature));
         self.weight += committee.stake_w_mask(&author);
+        debug!("Weight {:?}", self.weight);
         if self.weight >= committee.quorum_threshold() {
             self.weight = 0; // Ensures quorum is only reached once.
             let _ = committee.update_authorities_mask();
+            debug!("Mask updated");
             return Ok(Some(Certificate {
                 header: header.clone(),
                 votes: self.votes.clone(),
@@ -76,6 +78,7 @@ impl CertificatesAggregator {
 
         self.certificates.push(certificate);
         self.weight += committee.stake_w_mask(&origin);
+        debug!("Weight {:?}", self.weight);
         if self.weight >= committee.quorum_threshold() {
             //self.weight = 0; // Ensures quorum is only reached once.
             return Ok(Some(self.certificates.drain(..).collect()));

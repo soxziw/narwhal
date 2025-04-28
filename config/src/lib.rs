@@ -153,6 +153,7 @@ impl Committee {
     }
 
     pub fn update_authorities_mask(&mut self) -> BTreeMap<PublicKey, bool> {
+        debug!("Updating mask");
         use rand::seq::SliceRandom;
         
         let mut mask = BTreeMap::new();
@@ -179,7 +180,8 @@ impl Committee {
     }
 
     /// Return the stake of a specific authority.
-    pub fn stake_w_mask(&self, name: &PublicKey) -> Stake {        
+    pub fn stake_w_mask(&self, name: &PublicKey) -> Stake {
+        debug!("With mask {:?}", name);
         if self.authorities_mask.get(name).map_or(false, |&v| v) {
             self.authorities.get(name).map_or_else(|| 0, |x| x.stake)
         } else {
