@@ -128,7 +128,7 @@ impl Core {
             .collect();
         let bytes = bincode::serialize(&PrimaryMessage::Header(header.clone()))
             .expect("Failed to serialize our own header");
-        let handlers = self.network.lucky_broadcast(addresses, Bytes::from(bytes), self.committee.quorum_threshold() as usize).await;
+        let handlers = self.network.broadcast(addresses, Bytes::from(bytes)).await;
         self.cancel_handlers
             .entry(header.round)
             .or_insert_with(Vec::new)
@@ -220,7 +220,7 @@ impl Core {
         // Add it to the votes' aggregator and try to make a new certificate.
         if let Some(certificate) =
             self.votes_aggregator
-                .append(vote, &self.committee, &self.current_header)?
+                .append(vote, &mut self.committee, &self.current_header)?
         {
             debug!("Assembled {:?}", certificate);
 
@@ -233,7 +233,7 @@ impl Core {
                 .collect();
             let bytes = bincode::serialize(&PrimaryMessage::Certificate(certificate.clone()))
                 .expect("Failed to serialize our own certificate");
-            let handlers = self.network.lucky_broadcast(addresses, Bytes::from(bytes), self.committee.quorum_threshold() as usize).await;
+            let handlers = self.network.broadcast(addresses, Bytes::from(bytes)).await;
             self.cancel_handlers
                 .entry(certificate.round())
                 .or_insert_with(Vec::new)

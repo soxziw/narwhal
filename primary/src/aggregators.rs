@@ -24,7 +24,7 @@ impl VotesAggregator {
     pub fn append(
         &mut self,
         vote: Vote,
-        committee: &Committee,
+        committee: &mut Committee,
         header: &Header,
     ) -> DagResult<Option<Certificate>> {
         let author = vote.author;
@@ -33,9 +33,10 @@ impl VotesAggregator {
         ensure!(self.used.insert(author), DagError::AuthorityReuse(author));
 
         self.votes.push((author, vote.signature));
-        self.weight += committee.stake(&author);
+        self.weight += committee.stake_w_mask(&author);
         if self.weight >= committee.quorum_threshold() {
             self.weight = 0; // Ensures quorum is only reached once.
+            let _ = committee.update_authorities_mask();
             return Ok(Some(Certificate {
                 header: header.clone(),
                 votes: self.votes.clone(),
@@ -74,7 +75,7 @@ impl CertificatesAggregator {
         }
 
         self.certificates.push(certificate);
-        self.weight += committee.stake(&origin);
+        self.weight += committee.stake_w_mask(&origin);
         if self.weight >= committee.quorum_threshold() {
             //self.weight = 0; // Ensures quorum is only reached once.
             return Ok(Some(self.certificates.drain(..).collect()));

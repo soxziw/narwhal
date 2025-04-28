@@ -140,6 +140,8 @@ pub struct Authority {
 #[derive(Clone, Deserialize)]
 pub struct Committee {
     pub authorities: BTreeMap<PublicKey, Authority>,
+    #[serde(default)]
+    pub authorities_mask: BTreeMap<PublicKey, bool>,
 }
 
 impl Import for Committee {}
@@ -148,6 +150,41 @@ impl Committee {
     /// Returns the number of authorities.
     pub fn size(&self) -> usize {
         self.authorities.len()
+    }
+
+    pub fn update_authorities_mask(&mut self) -> BTreeMap<PublicKey, bool> {
+        use rand::seq::SliceRandom;
+        
+        let mut mask = BTreeMap::new();
+        let quorum_size = self.quorum_threshold() as usize;
+        
+        // Get all authority keys
+        let mut keys: Vec<PublicKey> = self.authorities.keys().cloned().collect();
+        keys.shuffle(&mut rand::rng());
+        
+        // Initialize all authorities to false
+        for key in &keys {
+            mask.insert(*key, false);
+        }
+        
+        // Randomly select 'quorum_size' authorities to set to true
+        for i in 0..quorum_size {
+            if i < keys.len() {
+                mask.insert(keys[i], true);
+            }
+        }
+        
+        self.authorities_mask = mask.clone();
+        mask
+    }
+
+    /// Return the stake of a specific authority.
+    pub fn stake_w_mask(&self, name: &PublicKey) -> Stake {        
+        if self.authorities_mask.get(name).map_or(false, |&v| v) {
+            self.authorities.get(name).map_or_else(|| 0, |x| x.stake)
+        } else {
+            0
+        }
     }
 
     /// Return the stake of a specific authority.
