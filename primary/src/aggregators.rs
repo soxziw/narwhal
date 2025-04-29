@@ -10,7 +10,6 @@ use log::debug;
 pub struct VotesAggregator {
     weight: Stake,
     votes: Vec<(PublicKey, Signature)>,
-    times: Vec<u128>,
     used: HashSet<PublicKey>,
 }
 
@@ -19,7 +18,6 @@ impl VotesAggregator {
         Self {
             weight: 0,
             votes: Vec::new(),
-            times: Vec::new(),
             used: HashSet::new(),
         }
     }
@@ -35,16 +33,10 @@ impl VotesAggregator {
         // Ensure it is the first time this authority votes.
         ensure!(self.used.insert(author), DagError::AuthorityReuse(author));
 
-        let current_time_ms = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_millis();
         self.votes.push((author, vote.signature));
-        self.times.push(current_time_ms);
         self.weight += committee.stake(&author);
         if self.weight >= committee.quorum_threshold() {
             debug!("Quorum {:?}", self.votes);
-            debug!("Quorum time {:?}", self.times);
             self.weight = 0; // Ensures quorum is only reached once.
             return Ok(Some(Certificate {
                 header: header.clone(),
