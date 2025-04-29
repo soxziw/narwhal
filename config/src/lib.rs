@@ -155,6 +155,15 @@ impl Committee {
         self.authorities.get(name).map_or_else(|| 0, |x| x.stake)
     }
 
+    /// Return the stake of a specific authority with specific mask.
+    pub fn stake_with_mask(&self, name: &PublicKey, mask: &BTreeMap<PublicKey, bool>) -> Stake {
+        if mask.get(name).map_or(false, |&v| v) {
+            self.authorities.get(name).map_or_else(|| 0, |x| x.stake)
+        } else {
+            0
+        }
+    }
+
     /// Returns the stake of all authorities except `myself`.
     pub fn others_stake(&self, myself: &PublicKey) -> Vec<(PublicKey, Stake)> {
         self.authorities
