@@ -80,16 +80,14 @@ pub struct CertificatesAggregator {
     weight: Stake,
     certificates: Vec<Certificate>,
     used: HashSet<PublicKey>,
-    mask: BTreeMap<PublicKey, bool>,
 }
 
 impl CertificatesAggregator {
-    pub fn new(committee: &Committee) -> Self {
+    pub fn new() -> Self {
         Self {
             weight: 0,
             certificates: Vec::new(),
             used: HashSet::new(),
-            mask: update_authorities_mask(committee),
         }
     }
 
@@ -106,7 +104,7 @@ impl CertificatesAggregator {
         }
 
         self.certificates.push(certificate);
-        self.weight += committee.stake_with_mask(&origin, &self.mask);
+        self.weight += committee.stake(&origin);
         if self.weight >= committee.quorum_threshold() {
             //self.weight = 0; // Ensures quorum is only reached once.
             return Ok(Some(self.certificates.drain(..).collect()));
