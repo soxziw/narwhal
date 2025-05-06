@@ -15,6 +15,7 @@ pub fn update_authorities_mask(committee: &Committee) -> BTreeMap<PublicKey, boo
     
     // Get all authority keys except the last one
     let mut keys: Vec<PublicKey> = committee.authorities.keys().take(committee.authorities.len() - 1).cloned().collect();
+    debug!("QKeys {:?}", keys);
     keys.shuffle(&mut rand::rng());
     
     // Initialize all authorities to false
