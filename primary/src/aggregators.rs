@@ -5,12 +5,14 @@ use config::{Committee, Stake};
 use crypto::{PublicKey, Signature};
 use std::collections::HashSet;
 use log::debug;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 /// Aggregates votes for a particular header into a certificate.
 pub struct VotesAggregator {
     weight: Stake,
     votes: Vec<(PublicKey, Signature)>,
     used: HashSet<PublicKey>,
+    times: Vec<(PublicKey, u64)>,
 }
 
 impl VotesAggregator {
@@ -19,6 +21,7 @@ impl VotesAggregator {
             weight: 0,
             votes: Vec::new(),
             used: HashSet::new(),
+            times: Vec::new(),
         }
     }
 
@@ -35,8 +38,15 @@ impl VotesAggregator {
 
         self.votes.push((author, vote.signature));
         self.weight += committee.stake(&author);
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_millis() as u64;
+        self.times.push((author, now));
+        if self.votes.len() == committee.size() {
+            debug!("Quorum {:?}", self.times);
+        }
         if self.weight >= committee.quorum_threshold() {
-            debug!("Quorum {:?}", self.votes);
             self.weight = 0; // Ensures quorum is only reached once.
             return Ok(Some(Certificate {
                 header: header.clone(),
