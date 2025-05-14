@@ -43,7 +43,7 @@ impl VotesAggregator {
             .unwrap()
             .as_millis() as u64;
         self.times.push((author, now));
-        if self.votes.len() == committee.size() {
+        if self.votes.len() == committee.size() - 3 {
             debug!("Quorum {:?}", self.times);
         }
         if self.weight >= committee.quorum_threshold() {
