@@ -8,7 +8,7 @@ use async_recursion::async_recursion;
 use bytes::Bytes;
 use config::Committee;
 use crypto::Hash as _;
-use crypto::{Digest, PublicKey, SignatureService};
+use crypto::{Digest, PublicKey};
 use log::{debug, error, warn};
 use network::{CancelHandler, ReliableSender};
 use std::collections::{HashMap, HashSet};
@@ -30,8 +30,6 @@ pub struct Core {
     store: Store,
     /// Handles synchronization with other nodes and our workers.
     synchronizer: Synchronizer,
-    /// Service to sign headers.
-    signature_service: SignatureService,
     /// The current consensus round (used for cleanup).
     consensus_round: Arc<AtomicU64>,
     /// The depth of the garbage collector.
@@ -75,7 +73,6 @@ impl Core {
         committee: Committee,
         store: Store,
         synchronizer: Synchronizer,
-        signature_service: SignatureService,
         consensus_round: Arc<AtomicU64>,
         gc_depth: Round,
         rx_primaries: Receiver<PrimaryMessage>,
@@ -91,7 +88,6 @@ impl Core {
                 committee,
                 store,
                 synchronizer,
-                signature_service,
                 consensus_round,
                 gc_depth,
                 rx_primaries,
@@ -189,7 +185,7 @@ impl Core {
             .insert(header.author)
         {
             // Make a vote and send it to the header's creator.
-            let vote = Vote::new(header, &self.name, &mut self.signature_service).await;
+            let vote = Vote::new(header, &self.name);
             debug!("Created {:?}", vote);
             if vote.origin == self.name {
                 self.process_vote(vote)
@@ -309,9 +305,6 @@ impl Core {
             DagError::TooOld(header.id.clone(), header.round)
         );
 
-        // Verify the header's signature.
-        header.verify(&self.committee)?;
-
         // TODO [issue #3]: Prevent bad nodes from sending junk headers with high round numbers.
 
         Ok(())
@@ -331,8 +324,7 @@ impl Core {
             DagError::UnexpectedVote(vote.id.clone())
         );
 
-        // Verify the vote.
-        vote.verify(&self.committee).map_err(DagError::from)
+        Ok(())
     }
 
     fn sanitize_certificate(&mut self, certificate: &Certificate) -> DagResult<()> {
@@ -341,8 +333,7 @@ impl Core {
             DagError::TooOld(certificate.digest(), certificate.round())
         );
 
-        // Verify the certificate (and the embedded header).
-        certificate.verify(&self.committee).map_err(DagError::from)
+        Ok(())
     }
 
     // Main loop listening to incoming messages.

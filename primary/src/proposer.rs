@@ -3,7 +3,7 @@ use crate::messages::{Certificate, Header};
 use crate::primary::Round;
 use config::{Committee, WorkerId};
 use crypto::Hash as _;
-use crypto::{Digest, PublicKey, SignatureService};
+use crypto::{Digest, PublicKey};
 #[cfg(feature = "benchmark")]
 use log::info;
 use log::{debug, log_enabled, warn};
@@ -21,8 +21,6 @@ pub struct Proposer {
     name: PublicKey,
     /// The committee information.
     committee: Committee,
-    /// Service to sign headers.
-    signature_service: SignatureService,
     /// The size of the headers' payload.
     header_size: usize,
     /// The maximum delay to wait for batches' digests.
@@ -52,7 +50,6 @@ impl Proposer {
     pub fn spawn(
         name: PublicKey,
         committee: Committee,
-        signature_service: SignatureService,
         header_size: usize,
         max_header_delay: u64,
         rx_core: Receiver<(Vec<Certificate>, Round)>,
@@ -64,7 +61,6 @@ impl Proposer {
             Self {
                 name,
                 committee,
-                signature_service,
                 header_size,
                 max_header_delay,
                 rx_core,
@@ -88,7 +84,6 @@ impl Proposer {
             self.round,
             self.digests.drain(..).collect(),
             self.last_parents.drain(..).map(|x| x.digest()).collect(),
-            &mut self.signature_service,
         )
         .await;
         debug!("Created {:?}", header);
