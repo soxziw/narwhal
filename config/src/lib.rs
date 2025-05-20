@@ -169,7 +169,7 @@ impl Committee {
         // If N = 3f + 1 + k (0 <= k < 3)
         // then (2 N + 3) / 3 = 2f + 1 + (2k + 2)/3 = 2f + 1 + k = N - f
         let total_votes: Stake = self.authorities.values().map(|x| x.stake).sum();
-        2 * total_votes / 3 + 1
+        (total_votes + 2) / 2
     }
 
     /// Returns the stake required to reach availability (f+1).
@@ -177,7 +177,7 @@ impl Committee {
         // If N = 3f + 1 + k (0 <= k < 3)
         // then (N + 2) / 3 = f + 1 + k/3 = f + 1
         let total_votes: Stake = self.authorities.values().map(|x| x.stake).sum();
-        (total_votes + 2) / 3
+        (total_votes + 1) / 2
     }
 
     /// Returns a leader node in a round-robin fashion.

@@ -33,14 +33,14 @@ pub enum DagError {
     #[error("Serialization error: {0}")]
     SerializationError(#[from] Box<bincode::ErrorKind>),
 
-    #[error("Invalid header id")]
-    InvalidHeaderId,
+    // #[error("Invalid header id")]
+    // InvalidHeaderId,
 
     #[error("Malformed header {0}")]
     MalformedHeader(Digest),
 
-    #[error("Received message from unknown authority {0}")]
-    UnknownAuthority(PublicKey),
+    // #[error("Received message from unknown authority {0}")]
+    // UnknownAuthority(PublicKey),
 
     #[error("Authority {0} appears in quorum more than once")]
     AuthorityReuse(PublicKey),
@@ -48,8 +48,8 @@ pub enum DagError {
     #[error("Received unexpected vote fo header {0}")]
     UnexpectedVote(Digest),
 
-    #[error("Received certificate without a quorum")]
-    CertificateRequiresQuorum,
+    // #[error("Received certificate without a quorum")]
+    // CertificateRequiresQuorum,
 
     #[error("Parents of header {0} are not a quorum")]
     HeaderRequiresQuorum(Digest),
