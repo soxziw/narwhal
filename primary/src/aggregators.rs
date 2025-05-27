@@ -3,22 +3,49 @@ use crate::error::{DagError, DagResult};
 use crate::messages::{Certificate, Header, Vote};
 use config::{Committee, Stake};
 use crypto::PublicKey;
-use std::collections::HashSet;
+use std::collections::{HashSet, BTreeMap};
 use log::debug;
+
+pub fn update_authorities_mask(committee: &Committee) -> BTreeMap<PublicKey, bool> {
+    use rand::seq::SliceRandom;
+    
+    let mut mask = BTreeMap::new();
+    let quorum_size = committee.quorum_threshold() as usize;
+    
+    // Get all authority keys except the last one
+    let mut keys: Vec<PublicKey> = committee.authorities.keys().take(committee.authorities.len()).cloned().collect();
+    keys.shuffle(&mut rand::rng());
+    
+    // Initialize all authorities to false
+    for key in &keys {
+        mask.insert(*key, false);
+    }
+    
+    // Randomly select 'quorum_size' authorities to set to true
+    for i in 0..quorum_size {
+        if i < keys.len() {
+            mask.insert(keys[i], true);
+        }
+    }
+    
+    mask
+}
 
 /// Aggregates votes for a particular header into a certificate.
 pub struct VotesAggregator {
     weight: Stake,
     votes: Vec<PublicKey>,
     used: HashSet<PublicKey>,
+    mask: BTreeMap<PublicKey, bool>,
 }
 
 impl VotesAggregator {
-    pub fn new() -> Self {
+    pub fn new(committee: &Committee) -> Self {
         Self {
             weight: 0,
             votes: Vec::new(),
             used: HashSet::new(),
+            mask: update_authorities_mask(committee),
         }
     }
 
@@ -34,7 +61,7 @@ impl VotesAggregator {
         ensure!(self.used.insert(author), DagError::AuthorityReuse(author));
 
         self.votes.push(author);
-        self.weight += committee.stake(&author);
+        self.weight += committee.stake_with_mask(&author, &self.mask);
         if self.weight >= committee.quorum_threshold() {
             debug!("Quorum {:?}", self.votes);
             self.weight = 0; // Ensures quorum is only reached once.

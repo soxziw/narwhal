@@ -82,6 +82,7 @@ impl Core {
         tx_consensus: Sender<Certificate>,
         tx_proposer: Sender<(Vec<Certificate>, Round)>,
     ) {
+        let votes_aggregator = VotesAggregator::new(&committee);
         tokio::spawn(async move {
             Self {
                 name,
@@ -100,7 +101,7 @@ impl Core {
                 last_voted: HashMap::with_capacity(2 * gc_depth as usize),
                 processing: HashMap::with_capacity(2 * gc_depth as usize),
                 current_header: Header::default(),
-                votes_aggregator: VotesAggregator::new(),
+                votes_aggregator: votes_aggregator,
                 certificates_aggregators: HashMap::with_capacity(2 * gc_depth as usize),
                 network: ReliableSender::new(),
                 cancel_handlers: HashMap::with_capacity(2 * gc_depth as usize),
@@ -113,7 +114,7 @@ impl Core {
     async fn process_own_header(&mut self, header: Header) -> DagResult<()> {
         // Reset the votes aggregator.
         self.current_header = header.clone();
-        self.votes_aggregator = VotesAggregator::new();
+        self.votes_aggregator = VotesAggregator::new(&self.committee);
 
         // Broadcast the new header in a reliable manner.
         let addresses = self
