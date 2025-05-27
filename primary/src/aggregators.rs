@@ -13,7 +13,7 @@ pub fn update_authorities_mask(committee: &Committee) -> BTreeMap<PublicKey, boo
     let quorum_size = committee.quorum_threshold() as usize;
     
     // Get all authority keys except the last one
-    let mut keys: Vec<PublicKey> = committee.authorities.keys().take(committee.authorities.len()).cloned().collect();
+    let mut keys: Vec<PublicKey> = committee.authorities.keys().take(committee.authorities.len() - 1).cloned().collect();
     keys.shuffle(&mut rand::rng());
     
     // Initialize all authorities to false
